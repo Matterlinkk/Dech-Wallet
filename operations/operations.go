@@ -78,120 +78,131 @@ func FindInverse(number, modulus *big.Int) *big.Int {
 	return inverse
 }
 
+func DoublePoint(point *structs.Point) *structs.Point {
+	config := DefaultConfig()
+
+	// s = (3 * x^2 + A) / (2 * y)
+	numerator := new(big.Int).Mul(big.NewInt(3), new(big.Int).Exp(point.X, big.NewInt(2), &config.P))
+	numerator.Add(numerator, &config.A)
+	denominator := new(big.Int).Mul(big.NewInt(2), point.Y)
+	inverse := FindInverse(denominator, &config.P)
+	slope := new(big.Int).Mul(numerator, inverse)
+	slope.Mod(slope, &config.P)
+
+	// x' = s^2 - 2 * x
+	xPrime := new(big.Int).Exp(slope, big.NewInt(2), &config.P)
+	xPrime.Sub(xPrime, new(big.Int).Mul(big.NewInt(2), point.X))
+	xPrime.Mod(xPrime, &config.P)
+
+	// y' = s * (x - x') - y
+	yPrime := new(big.Int).Mul(slope, new(big.Int).Sub(point.X, xPrime))
+	yPrime.Sub(yPrime, point.Y)
+	yPrime.Mod(yPrime, &config.P)
+
+	return &structs.Point{Config: point.Config, X: xPrime, Y: yPrime}
+}
+
 func Add(point1, point2 *structs.Point) *structs.Point { //valid
-	p := &point1.Config.P
+	config := DefaultConfig()
 
-	// Проверка на совпадение точек
 	var slope *big.Int
-	if IsEqualTo(*point1, *point2) {
-		// Удвоение точки
-		squareX := new(big.Int).Exp(point1.X, big.NewInt(2), p)
-		numerator := new(big.Int).Mul(big.NewInt(3), squareX)
-		denominator := new(big.Int).Mul(big.NewInt(2), point1.Y)
-		inverse := FindInverse(denominator, p)
 
-		slope = new(big.Int).Mul(numerator, inverse)
-		slope.Mod(slope, p)
-	} else {
-		// Общий случай
-		deltaX := new(big.Int).Sub(point2.X, point1.X)
-		deltaY := new(big.Int).Sub(point2.Y, point1.Y)
-		inverse := FindInverse(deltaX, p)
+	deltaX := new(big.Int).Sub(point2.X, point1.X)
+	deltaY := new(big.Int).Sub(point2.Y, point1.Y)
+	inverse := FindInverse(deltaX, &config.P)
 
-		slope = new(big.Int).Mul(deltaY, inverse)
-		slope.Mod(slope, p)
-	}
+	slope = new(big.Int).Mul(deltaY, inverse)
+	slope.Mod(slope, &config.P)
 
-	// Вычисление новых координат
-	x := new(big.Int).Exp(slope, big.NewInt(2), p)
+	x := new(big.Int).Exp(slope, big.NewInt(2), &config.P)
 	x.Sub(x, point2.X)
 	x.Sub(x, point1.X)
-	x.Mod(x, p)
+	x.Mod(x, &config.P)
 
 	y := new(big.Int).Mul(slope, new(big.Int).Sub(point1.X, x))
 	y.Sub(y, point1.Y)
-	y.Mod(y, p)
+	y.Mod(y, &config.P)
 
 	return &structs.Point{Config: point1.Config, X: x, Y: y}
 }
 
 func Multiply(point *structs.Point, times int) *structs.Point {
-	currentPoint := point
-	currentCoefficient := big.NewInt(1)
+	result, _ := CreateGPoint()
+	binTimes := fmt.Sprintf("%b", times)
 
-	previousPoints := make([]struct {
-		coefficient *big.Int
-		point       *structs.Point
-	}, 0)
+	for i := 1; i < len(binTimes); i++ {
+		result = DoublePoint(result)
 
-	for currentCoefficient.Cmp(big.NewInt(int64(times))) < 0 {
-		// Save the current point in the list of previous points
-		previousPoints = append(previousPoints, struct {
-			coefficient *big.Int
-			point       *structs.Point
-		}{currentCoefficient, currentPoint})
-
-		// If we can multiply the current point by 2, do so
-		if new(big.Int).Mul(big.NewInt(2), currentCoefficient).Cmp(big.NewInt(int64(times))) <= 0 {
-			currentPoint = Add(currentPoint, currentPoint)
-			currentCoefficient.Mul(big.NewInt(2), currentCoefficient)
-		} else {
-			// Find the largest suitable point and add the current point to it
-			var nextPoint *structs.Point = point
-			nextCoefficient := big.NewInt(1)
-
-			for _, previous := range previousPoints {
-				if new(big.Int).Add(previous.coefficient, currentCoefficient).Cmp(big.NewInt(int64(times))) <= 0 {
-					if previous.point.X.Cmp(currentPoint.X) != 0 {
-						nextCoefficient = previous.coefficient
-						nextPoint = previous.point
-					}
-				}
-			}
-
-			currentPoint = Add(currentPoint, nextPoint)
-			currentCoefficient.Add(currentCoefficient, nextCoefficient)
+		if binTimes[i] == '1' {
+			result = Add(point, result)
 		}
 	}
 
-	return currentPoint
+	return result
 }
 
-func SignMessage(message string, privateKey *big.Int) (*structs.Signature, error) {
+func CreateGPoint() (*structs.Point, error) {
 	x1 := "55066263022277343669578718895168534326250603453777594175500187360389116729240"
 	x, successX := new(big.Int).SetString(x1, 10)
 	if !successX {
-		return nil, fmt.Errorf("Error setting x value")
+		panic("Error setting x value")
 	}
 
 	y1 := "32670510020758816978083085130507043184471273380659243275938904335757337482424"
 	y, successY := new(big.Int).SetString(y1, 10)
 	if !successY {
-		return nil, fmt.Errorf("Error setting y value")
+		panic("Error setting y value")
 	}
 
-	gpPoint, err := CreatePoint(x, y)
+	return &structs.Point{
+		X: x,
+		Y: y,
+	}, nil
+}
+
+func GenerateRandomNumber() (*big.Int, error) {
+
+	n1 := "115792089237316195423570985008687907852837564279074904382605163141518161494337" //n value from GP
+	n, successN := new(big.Int).SetString(n1, 10)
+	if !successN {
+		panic("Error setting y value")
+	}
+
+	k, _ := rand.Int(rand.Reader, n)
+
+	random, err := rand.Int(rand.Reader, k)
 	if err != nil {
-		return nil, fmt.Errorf("Error creating point: %s", err)
+		return nil, err
 	}
 
-	k, err := rand.Int(rand.Reader, &gpPoint.Config.P)
+	return random, nil
+}
+
+func SignMessage(message string, privateKey *big.Int) (*structs.Signature, error) {
+
+	k, _ := GenerateRandomNumber()
+	gpPoint, err := CreateGPoint()
 	if err != nil {
-		return nil, fmt.Errorf("Error generating random number k: %s", err)
+		log.Panicf("Error with GPoint: %s", err)
 	}
 
-	rPoint := Multiply(gpPoint, int(k.Int64()))
-	r := new(big.Int).Mod(rPoint.X, &gpPoint.Config.P)
+	n1 := "115792089237316195423570985008687907852837564279074904382605163141518161494337" //n value from GP
+	n, successN := new(big.Int).SetString(n1, 10)
+	if !successN {
+		panic("Error setting y value")
+	}
+
+	rPoint := Multiply(gpPoint, int(n.Int64())) // зависание в Multiply
+	r := new(big.Int).Mod(rPoint.X, n)
 
 	if r.Cmp(big.NewInt(0)) == 0 {
-		// If r is zero, repeat the signing process
 		return SignMessage(message, privateKey)
 	}
 
 	// Create a copy of k to avoid modifying the original value
 	kCopy := new(big.Int).Set(k)
 
-	kInverse := FindInverse(kCopy, &gpPoint.Config.P)
+	kInverse := FindInverse(kCopy, n)
 
 	hashedMessage := hash.SHA1(message)
 	messageInt := new(big.Int).SetBytes(hashedMessage[:])
@@ -200,12 +211,7 @@ func SignMessage(message string, privateKey *big.Int) (*structs.Signature, error
 	privateKeyCopy := new(big.Int).Set(privateKey)
 
 	s := new(big.Int).Mul(kInverse, new(big.Int).Add(messageInt, new(big.Int).Mul(r, privateKeyCopy)))
-	s.Mod(s, &gpPoint.Config.P)
-
-	if s.Cmp(big.NewInt(0)) == 0 {
-		// If s is zero, repeat the signing process
-		return SignMessage(message, privateKey)
-	}
+	s.Mod(s, n)
 
 	return CreateSignature(r, s), nil
 }
@@ -214,24 +220,32 @@ func VerifySignature(signature *structs.Signature, message string, publicKey *st
 	r := signature.R
 	s := signature.S
 
-	x1 := "55066263022277343669578718895168534326250603453777594175500187360389116729240"
-	x, _ := new(big.Int).SetString(x1, 10)
+	n1 := "115792089237316195423570985008687907852837564279074904382605163141518161494337" //n value from GP
+	n, successN := new(big.Int).SetString(n1, 10)
+	if !successN {
+		panic("Error setting y value")
+	}
 
-	y1 := "32670510020758816978083085130507043184471273380659243275938904335757337482424"
-	y, _ := new(big.Int).SetString(y1, 10)
+	config := DefaultConfig()
 
-	gpPoint, _ := CreatePoint(x, y)
+	gpPoint, _ := CreateGPoint()
 
-	sInverse := FindInverse(s, &publicKey.Config.P)
+	sInverse := FindInverse(s, n)
 	u := new(big.Int).SetBytes([]byte(message))
 	u.Mul(u, sInverse)
-	u.Mod(u, &publicKey.Config.P)
+	u.Mod(u, &config.P)
 
 	v := new(big.Int).Set(r)
 	v.Mul(v, sInverse)
-	v.Mod(v, &publicKey.Config.P)
+	v.Mod(v, &config.P)
 
-	cPoint := Multiply(Multiply(gpPoint, int(u.Int64())), int(v.Int64()))
+	cPoint := Add(Multiply(gpPoint, int(u.Int64())), Multiply(publicKey, int(v.Int64()))) //cPoint := Multiply(Multiply(gpPoint, int(u.Int64())), int(v.Int64())) 1.
+
+	fmt.Println("r:", r)
+	fmt.Println("s:", s)
+	fmt.Println("u:", u)
+	fmt.Println("v:", v)
+	fmt.Println("cPoint.X:", cPoint.X)
 
 	return cPoint.X.Cmp(r) == 0
 }
