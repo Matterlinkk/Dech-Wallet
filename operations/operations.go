@@ -52,13 +52,13 @@ func CreateSignature(part1, part2 *big.Int) *structs.Signature {
 	}
 }
 
-func CreateMnemonic() string { //Dech-Wallet закинуть туда
-	// Генерация случайной энтропии
+func CreateMnemonic() string {
+	// Random entropy generation
 	entropy, err := bip39.NewEntropy(128)
 	if err != nil {
 		log.Panicf("Error %s", err)
 	}
-	// Преобразование энтропии в мнемоническую фразу
+	// Converting entropy into a mnemonic phrase
 	mnemonic, err := bip39.NewMnemonic(entropy)
 	if err != nil {
 		log.Panicf("Error %s", err)
@@ -71,8 +71,8 @@ func IsEqualTo(point1, point2 structs.Point) bool {
 }
 
 func FindInverse(number, modulus *big.Int) *big.Int {
-	// Используем функцию ModInverse для вычисления обратного элемента в модульном арифметическом кольце.
-	// Если обратный элемент не существует, результат будет nil.
+	// We use the ModInverse function to compute the inverse element in a modular arithmetic ring.
+	// If the inverse element does not exist, the result is nil.
 	inverse := new(big.Int).ModInverse(number, modulus)
 
 	return inverse
@@ -192,7 +192,7 @@ func SignMessage(message string, privateKey *big.Int) (*structs.Signature, error
 		panic("Error setting y value")
 	}
 
-	rPoint := Multiply(gpPoint, int(n.Int64())) // зависание в Multiply
+	rPoint := Multiply(gpPoint, int(n.Int64()))
 	r := new(big.Int).Mod(rPoint.X, n)
 
 	if r.Cmp(big.NewInt(0)) == 0 {
