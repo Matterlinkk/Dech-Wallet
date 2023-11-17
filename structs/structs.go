@@ -9,9 +9,8 @@ type Config struct {
 }
 
 type Point struct {
-	Config *Config
-	X      *big.Int
-	Y      *big.Int
+	X *big.Int
+	Y *big.Int
 }
 
 type Signature struct {
