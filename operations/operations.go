@@ -101,7 +101,7 @@ func DoublePoint(point *structs.Point) *structs.Point {
 	return &structs.Point{X: xPrime, Y: yPrime}
 }
 
-func Add(point1, point2 *structs.Point) *structs.Point { //valid
+func Add(point1, point2 *structs.Point) *structs.Point {
 	config := DefaultConfig()
 
 	if IsEqualTo(*point1, *point2) {
@@ -111,10 +111,6 @@ func Add(point1, point2 *structs.Point) *structs.Point { //valid
 	deltaX := new(big.Int).Sub(point2.X, point1.X)
 	deltaY := new(big.Int).Sub(point2.Y, point1.Y)
 	inverse := FindInverse(deltaX, &config.P)
-
-	fmt.Println("deltaX:", deltaX)
-	fmt.Println("deltaY:", deltaY)
-	fmt.Println("inverse:", inverse)
 
 	slope := new(big.Int).Mul(deltaY, inverse)
 	slope.Mod(slope, &config.P)
@@ -132,13 +128,11 @@ func Add(point1, point2 *structs.Point) *structs.Point { //valid
 }
 
 func Multiply(point *structs.Point, times *big.Int) *structs.Point {
-	result, _ := CreateGPoint()
+	result, _ := CreatePoint(point.X, point.Y)
 	binTimes := fmt.Sprintf("%b", times)
 
 	for i := 1; i < len(binTimes); i++ {
 		result = DoublePoint(result)
-
-		fmt.Println(i)
 
 		if binTimes[i] == '1' {
 			result = Add(point, result)
@@ -169,8 +163,9 @@ func CreateGPoint() (*structs.Point, error) {
 
 func GenerateRandomNumber() (*big.Int, error) {
 
-	n1 := "115792089237316195423570985008687907852837564279074904382605163141518161494337" //n value from GP
+	n1 := "115792089237316195423570985008687907852837564279074904382605163141518161494337" //115792089237316195423570985008687907852837564279074904382605163141518161494337 value from GP
 	n, successN := new(big.Int).SetString(n1, 10)
+	n.Sub(n, big.NewInt(1))
 	if !successN {
 		panic("Error setting y value")
 	}
@@ -191,8 +186,9 @@ func SignMessage(message string, privateKey *big.Int) (*structs.Signature, error
 		log.Panicf("Error with GPoint: %s", err)
 	}
 
-	n1 := "115792089237316195423570985008687907852837564279074904382605163141518161494337" //n value from GP
-	n, successN := new(big.Int).SetString(n1, 10)                                          //
+	n1 := "115792089237316195423570985008687907852837564279074904382605163141518161494337" //115792089237316195423570985008687907852837564279074904382605163141518161494337 value from GP
+	n, successN := new(big.Int).SetString(n1, 10)
+	n.Sub(n, big.NewInt(1))
 	if !successN {
 		panic("Error setting y value")
 	}
@@ -213,6 +209,9 @@ func SignMessage(message string, privateKey *big.Int) (*structs.Signature, error
 	// Create a copy of k to avoid modifying the original value
 	kCopy := new(big.Int).Set(k)
 
+	fmt.Println("kCopy: ", kCopy)
+	fmt.Println("n: ", n)
+
 	kInverse := FindInverse(kCopy, n)
 
 	hashedMessage := hash.SHA1(message)
@@ -220,9 +219,14 @@ func SignMessage(message string, privateKey *big.Int) (*structs.Signature, error
 
 	// Create a copy of privateKey to avoid modifying the original value
 	privateKeyCopy := new(big.Int).Set(privateKey)
-
+	fmt.Println("kInverse: ", kInverse)
+	fmt.Println("messageInt: ", messageInt)
+	fmt.Println("r: ", r)
+	fmt.Println("privateKeyCopy: ", privateKeyCopy)
 	s := new(big.Int).Mul(kInverse, new(big.Int).Add(messageInt, new(big.Int).Mul(r, privateKeyCopy)))
+	println("s value: ", s.String())
 	s.Mod(s, n)
+	println("s value: ", s.String())
 
 	return CreateSignature(r, s), nil
 }
@@ -231,8 +235,9 @@ func VerifySignature(signature *structs.Signature, message string, publicKey *st
 	r := signature.R
 	s := signature.S
 
-	n1 := "115792089237316195423570985008687907852837564279074904382605163141518161494337" //n value from GP
+	n1 := "115792089237316195423570985008687907852837564279074904382605163141518161494337" //115792089237316195423570985008687907852837564279074904382605163141518161494337 value from GP
 	n, successN := new(big.Int).SetString(n1, 10)
+	n.Sub(n, big.NewInt(1))
 	if !successN {
 		panic("Error setting y value")
 	}
@@ -252,11 +257,24 @@ func VerifySignature(signature *structs.Signature, message string, publicKey *st
 
 	cPoint := Add(Multiply(gpPoint, u), Multiply(publicKey, v)) //cPoint := Multiply(Multiply(gpPoint, int(u.Int64())), int(v.Int64())) 1.
 
-	//fmt.Println("r:", r)
-	//fmt.Println("s:", s)
-	//fmt.Println("u:", u)
-	//fmt.Println("v:", v)
-	//fmt.Println("cPoint.X:", cPoint.X, "len", len(cPoint.X.String()))
-
 	return cPoint.X.Cmp(r) == 0
+}
+
+func GetKeyPair(privateKey *big.Int) structs.KeyPair {
+
+	gPoint, _ := CreateGPoint()
+
+	publicKey := Multiply(gPoint, privateKey)
+
+	return structs.KeyPair{
+		PrivateKey: privateKey,
+		PublicKey:  publicKey,
+	}
+}
+
+func GetSharedSecret(publicKey *structs.Point, privateKey *big.Int) *big.Int {
+
+	sharedSecret := Multiply(publicKey, privateKey)
+
+	return new(big.Int).Set(sharedSecret.X)
 }

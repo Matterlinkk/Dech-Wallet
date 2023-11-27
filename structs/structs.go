@@ -17,3 +17,8 @@ type Signature struct {
 	R *big.Int
 	S *big.Int
 }
+
+type KeyPair struct {
+	PrivateKey *big.Int
+	PublicKey  *Point
+}
