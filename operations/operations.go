@@ -3,9 +3,13 @@ package operations
 import (
 	"Signature/hash"
 	"Signature/structs"
+	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"fmt"
 	"github.com/tyler-smith/go-bip39"
+	"io"
 	"log"
 	"math/big"
 )
@@ -70,8 +74,6 @@ func IsEqualTo(point1, point2 structs.Point) bool {
 }
 
 func FindInverse(number, modulus *big.Int) *big.Int {
-	// Используем функцию ModInverse для вычисления обратного элемента в модульном арифметическом кольце.
-	// Если обратный элемент не существует, результат будет nil.
 	inverse := new(big.Int).ModInverse(number, modulus)
 
 	return inverse
@@ -277,4 +279,81 @@ func GetSharedSecret(publicKey *structs.Point, privateKey *big.Int) *big.Int {
 	sharedSecret := Multiply(publicKey, privateKey)
 
 	return new(big.Int).Set(sharedSecret.X)
+}
+
+func encrypt(plaintext []byte, block cipher.Block) []byte {
+	// Добавляем отступ до размера блока
+	plaintext = append(plaintext, bytes.Repeat([]byte{byte(16 - len(plaintext)%16)}, 16-len(plaintext)%16)...)
+	ciphertext := make([]byte, len(plaintext))
+	iv := make([]byte, aes.BlockSize)
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		panic(err.Error())
+	}
+
+	mode := cipher.NewCBCEncrypter(block, iv)
+	mode.CryptBlocks(ciphertext, plaintext)
+
+	// Добавляем IV в начало зашифрованного текста
+	ciphertext = append(iv, ciphertext...)
+
+	return ciphertext
+}
+
+func GetEncryptedMessage(secret *big.Int, message string) string {
+
+	// Преобразование общего секрета в массив байт нужной длины для ключа AES
+	sharedSecretBytes := secret.Bytes()
+
+	// Генерация случайного ключа AES
+	key := make([]byte, 32)
+	copy(key, sharedSecretBytes) // Используем общий секрет в качестве ключа
+
+	// Инициализация блочного шифра AES
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Шифрование сообщения
+	plaintext := []byte(message)
+
+	return string(encrypt(plaintext, block))
+
+}
+
+func decrypt(ciphertext []byte, block cipher.Block) []byte {
+	if len(ciphertext) < aes.BlockSize {
+		panic("ciphertext too short")
+	}
+
+	// Выделяем IV из начала зашифрованного текста
+	iv := ciphertext[:aes.BlockSize]
+	ciphertext = ciphertext[aes.BlockSize:]
+
+	mode := cipher.NewCBCDecrypter(block, iv)
+	mode.CryptBlocks(ciphertext, ciphertext)
+
+	// Удаляем отступ, добавленный при шифровании
+	padSize := int(ciphertext[len(ciphertext)-1])
+	return ciphertext[:len(ciphertext)-padSize]
+}
+
+func GetDecryptedMessage(secret *big.Int, ciphertext string) string {
+	// Преобразование общего секрета в массив байт нужной длины для ключа AES
+	sharedSecretBytes := secret.Bytes()
+
+	// Генерация случайного ключа AES
+	key := make([]byte, 32)
+	copy(key, sharedSecretBytes)
+
+	ciphertextByte := []byte(ciphertext)
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	decryptedText := decrypt(ciphertextByte, block)
+
+	return string(decryptedText)
 }
