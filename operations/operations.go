@@ -48,20 +48,21 @@ func DefaultConfig() *structs.Config {
 	}
 }
 
-func CreateSignature(part1, part2 *big.Int) *structs.Signature {
+func CreateSignature(part1, part2 *big.Int, publicKey *structs.Point) *structs.Signature {
 	return &structs.Signature{
-		R: part1,
-		S: part2,
+		Owner: publicKey,
+		R:     part1,
+		S:     part2,
 	}
 }
 
-func CreateMnemonic() string { //Dech-Wallet закинуть туда
-	// Генерация случайной энтропии
+func CreateMnemonic() string {
+	// Random entropy generation
 	entropy, err := bip39.NewEntropy(128)
 	if err != nil {
 		log.Panicf("Error %s", err)
 	}
-	// Преобразование энтропии в мнемоническую фразу
+	// Converting entropy into a mnemonic phrase
 	mnemonic, err := bip39.NewMnemonic(entropy)
 	if err != nil {
 		log.Panicf("Error %s", err)
@@ -74,7 +75,11 @@ func IsEqualTo(point1, point2 structs.Point) bool {
 }
 
 func FindInverse(number, modulus *big.Int) *big.Int {
-	inverse := new(big.Int).ModInverse(number, modulus)
+	// Calculate the modular inverse using exponentiation
+	// The modular inverse of 'number' modulo 'modulus' is equivalent to 'number' raised to the power of 'modulus-2' modulo 'modulus'
+	// This is based on Fermat's Little Theorem for prime 'modulus'
+	exponent := new(big.Int).Sub(modulus, big.NewInt(2))
+	inverse := new(big.Int).Exp(number, exponent, modulus)
 
 	return inverse
 }
@@ -180,86 +185,84 @@ func GenerateRandomNumber() (*big.Int, error) {
 	return random, nil
 }
 
-func SignMessage(message string, privateKey *big.Int) (*structs.Signature, error) {
+func SignMessage(message string, keys structs.KeyPair) (*structs.Signature, error) {
 
 	k, _ := GenerateRandomNumber()
-	gpPoint, err := CreateGPoint()
+
+	gPoint, err := CreateGPoint()
 	if err != nil {
 		log.Panicf("Error with GPoint: %s", err)
 	}
 
+	kG := Multiply(gPoint, k)
+
 	n1 := "115792089237316195423570985008687907852837564279074904382605163141518161494337" //115792089237316195423570985008687907852837564279074904382605163141518161494337 value from GP
 	n, successN := new(big.Int).SetString(n1, 10)
-	n.Sub(n, big.NewInt(1))
 	if !successN {
 		panic("Error setting y value")
 	}
-	fmt.Println("n is: ", n.String())
 
-	rPoint := Multiply(gpPoint, n)
-
-	fmt.Println("rPoint.X is: ", rPoint.X)
-
-	r := new(big.Int).Mod(rPoint.X, n)
-
-	fmt.Println("r is: ", r.String())
+	r := new(big.Int).Mod(kG.X, n)
 
 	if r.Cmp(big.NewInt(0)) == 0 {
-		return SignMessage(message, privateKey)
+		return SignMessage(message, keys)
 	}
 
-	// Create a copy of k to avoid modifying the original value
-	kCopy := new(big.Int).Set(k)
+	hash := hash.SHA1(message)
+	hashInt := new(big.Int).SetBytes(hash[:])
 
-	fmt.Println("kCopy: ", kCopy)
-	fmt.Println("n: ", n)
+	// k^-1 * ( intHASH(message) + d * r) mod n, if s = 0 then do recursion
+	invK := FindInverse(k, n)
+	dr := new(big.Int).Mul(keys.PrivateKey, r)
 
-	kInverse := FindInverse(kCopy, n)
+	hashdr := new(big.Int).Add(hashInt, dr)
 
-	hashedMessage := hash.SHA1(message)
-	messageInt := new(big.Int).SetBytes(hashedMessage[:])
+	kpandhash := new(big.Int).Mul(invK, hashdr)
 
-	// Create a copy of privateKey to avoid modifying the original value
-	privateKeyCopy := new(big.Int).Set(privateKey)
-	fmt.Println("kInverse: ", kInverse)
-	fmt.Println("messageInt: ", messageInt)
-	fmt.Println("r: ", r)
-	fmt.Println("privateKeyCopy: ", privateKeyCopy)
-	s := new(big.Int).Mul(kInverse, new(big.Int).Add(messageInt, new(big.Int).Mul(r, privateKeyCopy)))
-	println("s value: ", s.String())
-	s.Mod(s, n)
-	println("s value: ", s.String())
+	s := new(big.Int).Mod(kpandhash, n)
+	if s.Cmp(big.NewInt(0)) == 0 {
+		return SignMessage(message, keys)
+	}
 
-	return CreateSignature(r, s), nil
+	return CreateSignature(r, s, keys.PublicKey), err
+
 }
 
 func VerifySignature(signature *structs.Signature, message string, publicKey *structs.Point) bool {
-	r := signature.R
-	s := signature.S
 
 	n1 := "115792089237316195423570985008687907852837564279074904382605163141518161494337" //115792089237316195423570985008687907852837564279074904382605163141518161494337 value from GP
 	n, successN := new(big.Int).SetString(n1, 10)
-	n.Sub(n, big.NewInt(1))
 	if !successN {
 		panic("Error setting y value")
 	}
 
-	config := DefaultConfig()
+	sInverse := FindInverse(signature.S, n)
 
-	gpPoint, _ := CreateGPoint()
+	// Calculate the hashed message
+	hashedMessage := hash.SHA1(message)
+	messageInt := new(big.Int).SetBytes(hashedMessage[:])
 
-	sInverse := FindInverse(s, n)
-	u := new(big.Int).SetBytes([]byte(message))
-	u.Mul(u, sInverse)
-	u.Mod(u, &config.P)
+	// Calculate u and v
+	u := new(big.Int).Mul(messageInt, sInverse)
+	u.Mod(u, n)
 
-	v := new(big.Int).Set(r)
-	v.Mul(v, sInverse)
-	v.Mod(v, &config.P)
+	v := new(big.Int).Mul(signature.R, sInverse)
+	v.Mod(v, n)
 
-	cPoint := Add(Multiply(gpPoint, u), Multiply(publicKey, v)) //cPoint := Multiply(Multiply(gpPoint, int(u.Int64())), int(v.Int64())) 1.
+	// Calculate the curve point P = u * G + v * publicKey
+	gPoint, _ := CreateGPoint()
 
-	return cPoint.X.Cmp(r) == 0
+	// Calculate u * G
+	cPoint := Multiply(gPoint, u)
+
+	// Calculate v * publicKey
+	vPublicKey := Multiply(publicKey, v)
+
+	// Calculate P = uG + vPublicKey
+	p := Add(cPoint, vPublicKey)
+
+	// Check if R is equal to x-coordinate of the point P
+	return p.X.Cmp(signature.R) == 0
 }
 
 func GetKeyPair(privateKey *big.Int) structs.KeyPair {
@@ -293,7 +296,7 @@ func encrypt(plaintext []byte, block cipher.Block) []byte {
 	mode := cipher.NewCBCEncrypter(block, iv)
 	mode.CryptBlocks(ciphertext, plaintext)
 
-	// Добавляем IV в начало зашифрованного текста
+	// Add the IV to the beginning of the ciphertext
 	ciphertext = append(iv, ciphertext...)
 
 	return ciphertext
@@ -301,20 +304,20 @@ func encrypt(plaintext []byte, block cipher.Block) []byte {
 
 func GetEncryptedMessage(secret *big.Int, message string) string {
 
-	// Преобразование общего секрета в массив байт нужной длины для ключа AES
+	// Convert a shared secret into a byte array of the required length for an AES key
 	sharedSecretBytes := secret.Bytes()
 
-	// Генерация случайного ключа AES
+	// AES random key generation
 	key := make([]byte, 32)
 	copy(key, sharedSecretBytes) // Используем общий секрет в качестве ключа
 
-	// Инициализация блочного шифра AES
+	// Initialization of AES block cipher
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	// Шифрование сообщения
+	// Message encryption
 	plaintext := []byte(message)
 
 	return string(encrypt(plaintext, block))
@@ -326,23 +329,23 @@ func decrypt(ciphertext []byte, block cipher.Block) []byte {
 		panic("ciphertext too short")
 	}
 
-	// Выделяем IV из начала зашифрованного текста
+	// Highlight the IV from the beginning of the ciphertext
 	iv := ciphertext[:aes.BlockSize]
 	ciphertext = ciphertext[aes.BlockSize:]
 
 	mode := cipher.NewCBCDecrypter(block, iv)
 	mode.CryptBlocks(ciphertext, ciphertext)
 
-	// Удаляем отступ, добавленный при шифровании
+	// Remove the indentation added during encryption
 	padSize := int(ciphertext[len(ciphertext)-1])
 	return ciphertext[:len(ciphertext)-padSize]
 }
 
 func GetDecryptedMessage(secret *big.Int, ciphertext string) string {
-	// Преобразование общего секрета в массив байт нужной длины для ключа AES
+	// Convert a shared secret into a byte array of the required length for an AES key
 	sharedSecretBytes := secret.Bytes()
 
-	// Генерация случайного ключа AES
+	// AES random key generation
 	key := make([]byte, 32)
 	copy(key, sharedSecretBytes)
 

@@ -14,8 +14,9 @@ type Point struct {
 }
 
 type Signature struct {
-	R *big.Int
-	S *big.Int
+	Owner *Point
+	R     *big.Int
+	S     *big.Int
 }
 
 type KeyPair struct {
