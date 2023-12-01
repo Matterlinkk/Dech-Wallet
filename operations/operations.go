@@ -1,13 +1,13 @@
 package operations
 
 import (
-	"Dech-Wallet/hash"
-	"Dech-Wallet/structs"
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"fmt"
+	"github.com/Matterlinkk/Dech-Wallet/hash"
+	"github.com/Matterlinkk/Dech-Wallet/structs"
 	"github.com/tyler-smith/go-bip39"
 	"io"
 	"log"
