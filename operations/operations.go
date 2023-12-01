@@ -1,8 +1,8 @@
 package operations
 
 import (
-	"Signature/hash"
-	"Signature/structs"
+	"Dech-Wallet/hash"
+	"Dech-Wallet/structs"
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"

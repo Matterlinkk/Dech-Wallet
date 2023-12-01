@@ -1,17 +1,17 @@
 package main
 
 import (
-	"Signature/operations"
+	"Dech-Wallet/operations"
 	"fmt"
 	"math/big"
 )
 
 func main() {
-	message := "Hello, world!"
+	message := "qwe"
 
-	alicePrivate := big.NewInt(123)
+	moonkushPrivate := big.NewInt(1488)
 
-	aliceKeys := operations.GetKeyPair(alicePrivate)
+	aliceKeys := operations.GetKeyPair(moonkushPrivate)
 
 	signature, _ := operations.SignMessage(message, aliceKeys)
 
@@ -22,6 +22,6 @@ func main() {
 	fmt.Println(signature)
 	fmt.Printf("R: %s\nS: %s\n", signature.R.String(), signature.S.String())
 
-	q := operations.VerifySignature(signature, "Hello, world", aliceKeys.PublicKey)
+	q := operations.VerifySignature(signature, "qwe", aliceKeys.PublicKey)
 	fmt.Println(q)
 }
