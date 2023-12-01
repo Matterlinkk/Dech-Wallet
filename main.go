@@ -15,6 +15,13 @@ func main() {
 
 	signature, _ := operations.SignMessage(message, aliceKeys)
 
-	q := operations.VerifySignature(signature, message, aliceKeys.PublicKey)
+	//bobPrivate := big.NewInt(122)
+
+	//bobKeys := operations.GetKeyPair(bobPrivate)
+
+	fmt.Println(signature)
+	fmt.Printf("R: %s\nS: %s\n", signature.R.String(), signature.S.String())
+
+	q := operations.VerifySignature(signature, "Hello, world", aliceKeys.PublicKey)
 	fmt.Println(q)
 }

@@ -14,7 +14,7 @@ import (
 	"math/big"
 )
 
-func CreatePoint(x, y *big.Int) (*structs.Point, error) {
+func createPoint(x, y *big.Int) (*structs.Point, error) {
 	config := DefaultConfig()
 
 	ySquaredModP := new(big.Int).Mod(new(big.Int).Exp(y, big.NewInt(2), &config.P), &config.P)
@@ -48,7 +48,7 @@ func DefaultConfig() *structs.Config {
 	}
 }
 
-func CreateSignature(part1, part2 *big.Int, publicKey *structs.Point) *structs.Signature {
+func createSignature(part1, part2 *big.Int, publicKey *structs.Point) *structs.Signature {
 	return &structs.Signature{
 		Owner: publicKey,
 		R:     part1,
@@ -70,11 +70,11 @@ func CreateMnemonic() string {
 	return mnemonic
 }
 
-func IsEqualTo(point1, point2 structs.Point) bool {
+func isEqualTo(point1, point2 structs.Point) bool {
 	return point1.X.Cmp(point2.X) == 0 && point1.Y.Cmp(point2.Y) == 0
 }
 
-func FindInverse(number, modulus *big.Int) *big.Int {
+func findInverse(number, modulus *big.Int) *big.Int {
 	// Calculate the modular inverse using exponentiation
 	// The modular inverse of 'number' modulo 'modulus' is equivalent to 'number' raised to the power of 'modulus-2' modulo 'modulus'
 	// This is based on Fermat's Little Theorem for prime 'modulus'
@@ -84,14 +84,14 @@ func FindInverse(number, modulus *big.Int) *big.Int {
 	return inverse
 }
 
-func DoublePoint(point *structs.Point) *structs.Point {
+func doublePoint(point *structs.Point) *structs.Point {
 	config := DefaultConfig()
 
 	// s = (3 * x^2 + A) / (2 * y)
 	numerator := new(big.Int).Mul(big.NewInt(3), new(big.Int).Exp(point.X, big.NewInt(2), &config.P))
 	numerator.Add(numerator, &config.A)
 	denominator := new(big.Int).Mul(big.NewInt(2), point.Y)
-	inverse := FindInverse(denominator, &config.P)
+	inverse := findInverse(denominator, &config.P)
 	slope := new(big.Int).Mul(numerator, inverse)
 	slope.Mod(slope, &config.P)
 
@@ -108,16 +108,16 @@ func DoublePoint(point *structs.Point) *structs.Point {
 	return &structs.Point{X: xPrime, Y: yPrime}
 }
 
-func Add(point1, point2 *structs.Point) *structs.Point {
+func add(point1, point2 *structs.Point) *structs.Point {
 	config := DefaultConfig()
 
-	if IsEqualTo(*point1, *point2) {
-		return DoublePoint(point1)
+	if isEqualTo(*point1, *point2) {
+		return doublePoint(point1)
 	}
 
 	deltaX := new(big.Int).Sub(point2.X, point1.X)
 	deltaY := new(big.Int).Sub(point2.Y, point1.Y)
-	inverse := FindInverse(deltaX, &config.P)
+	inverse := findInverse(deltaX, &config.P)
 
 	slope := new(big.Int).Mul(deltaY, inverse)
 	slope.Mod(slope, &config.P)
@@ -134,15 +134,15 @@ func Add(point1, point2 *structs.Point) *structs.Point {
 	return &structs.Point{X: x, Y: y}
 }
 
-func Multiply(point *structs.Point, times *big.Int) *structs.Point {
-	result, _ := CreatePoint(point.X, point.Y)
+func multiply(point *structs.Point, times *big.Int) *structs.Point {
+	result, _ := createPoint(point.X, point.Y)
 	binTimes := fmt.Sprintf("%b", times)
 
 	for i := 1; i < len(binTimes); i++ {
-		result = DoublePoint(result)
+		result = doublePoint(result)
 
 		if binTimes[i] == '1' {
-			result = Add(point, result)
+			result = add(point, result)
 		}
 	}
 
@@ -194,7 +194,7 @@ func SignMessage(message string, keys structs.KeyPair) (*structs.Signature, erro
 		log.Panicf("Error with GPoint: %s", err)
 	}
 
-	kG := Multiply(gPoint, k)
+	kG := multiply(gPoint, k)
 
 	n1 := "115792089237316195423570985008687907852837564279074904382605163141518161494337" //115792089237316195423570985008687907852837564279074904382605163141518161494337 value from GP
 	n, successN := new(big.Int).SetString(n1, 10)
@@ -212,7 +212,7 @@ func SignMessage(message string, keys structs.KeyPair) (*structs.Signature, erro
 	hashInt := new(big.Int).SetBytes(hash[:])
 
 	// k^-1 * ( intHASH(message) + d * r) mod n, if s = 0 then do recursion
-	invK := FindInverse(k, n)
+	invK := findInverse(k, n)
 	dr := new(big.Int).Mul(keys.PrivateKey, r)
 
 	hashdr := new(big.Int).Add(hashInt, dr)
@@ -224,7 +224,7 @@ func SignMessage(message string, keys structs.KeyPair) (*structs.Signature, erro
 		return SignMessage(message, keys)
 	}
 
-	return CreateSignature(r, s, keys.PublicKey), err
+	return createSignature(r, s, keys.PublicKey), err
 
 }
 
@@ -236,7 +236,8 @@ func VerifySignature(signature *structs.Signature, message string, publicKey *st
 		panic("Error setting y value")
 	}
 
-	sInverse := FindInverse(signature.S, n)
+	sInverse := findInverse(signature.S, n)
+	sInverse.Mod(sInverse, n)
 
 	// Calculate the hashed message
 	hashedMessage := hash.SHA1(message)
@@ -253,13 +254,13 @@ func VerifySignature(signature *structs.Signature, message string, publicKey *st
 	gPoint, _ := CreateGPoint()
 
 	// Calculate u * G
-	cPoint := Multiply(gPoint, u)
+	cPoint := multiply(gPoint, u)
 
 	// Calculate v * publicKey
-	vPublicKey := Multiply(publicKey, v)
+	vPublicKey := multiply(publicKey, v)
 
 	// Calculate P = uG + vPublicKey
-	p := Add(cPoint, vPublicKey)
+	p := add(cPoint, vPublicKey)
 
 	// Check if R is equal to x-coordinate of the point P
 	return p.X.Cmp(signature.R) == 0
@@ -269,7 +270,7 @@ func GetKeyPair(privateKey *big.Int) structs.KeyPair {
 
 	gPoint, _ := CreateGPoint()
 
-	publicKey := Multiply(gPoint, privateKey)
+	publicKey := multiply(gPoint, privateKey)
 
 	return structs.KeyPair{
 		PrivateKey: privateKey,
@@ -279,7 +280,7 @@ func GetKeyPair(privateKey *big.Int) structs.KeyPair {
 
 func GetSharedSecret(publicKey *structs.Point, privateKey *big.Int) *big.Int {
 
-	sharedSecret := Multiply(publicKey, privateKey)
+	sharedSecret := multiply(publicKey, privateKey)
 
 	return new(big.Int).Set(sharedSecret.X)
 }
@@ -296,7 +297,7 @@ func encrypt(plaintext []byte, block cipher.Block) []byte {
 	mode := cipher.NewCBCEncrypter(block, iv)
 	mode.CryptBlocks(ciphertext, plaintext)
 
-	// Add the IV to the beginning of the ciphertext
+	// add the IV to the beginning of the ciphertext
 	ciphertext = append(iv, ciphertext...)
 
 	return ciphertext
