@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"Signature/operations"
+	"github.com/Matterlinkk/Dech-Wallet/operations"
 	"math/big"
 	"testing"
 )

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"Dech-Wallet/operations"
 	"fmt"
+	"github.com/Matterlinkk/Dech-Wallet/operations"
 	"math/big"
 )
 
