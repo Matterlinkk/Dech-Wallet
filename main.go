@@ -18,6 +18,6 @@ func main() {
 
 	sign.GetSignature()
 
-	q := sign.VerifySignature("qwe", aliceKeys.GetPublic())
+	q := signature.VerifySignature(*sign, "qwe", aliceKeys.GetPublic())
 	fmt.Println(q)
 }
