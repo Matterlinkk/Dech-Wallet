@@ -1,20 +1,21 @@
 package testing
 
 import (
-	"github.com/Matterlinkk/Dech-Wallet/operations"
+	"github.com/Matterlinkk/Dech-Wallet/keys"
+	"github.com/Matterlinkk/Dech-Wallet/signature"
 	"math/big"
 	"testing"
 )
 
 func TestSignature(t *testing.T) {
 
-	alice := operations.GetKeyPair(big.NewInt(1))
+	alice := keys.GetKeys(big.NewInt(1))
 
 	m := "Hello, ECDSA!"
 
-	signature, _ := operations.SignMessage(m, alice)
+	sign := signature.SignMessage(m, alice)
 
-	verify := operations.VerifySignature(signature, m, alice.PublicKey)
+	verify := sign.VerifySignature(m, alice.GetPublic())
 
 	if !verify {
 		t.Error("Invalid signature")

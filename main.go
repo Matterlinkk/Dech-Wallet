@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/Matterlinkk/Dech-Wallet/operations"
+	"github.com/Matterlinkk/Dech-Wallet/keys"
+	"github.com/Matterlinkk/Dech-Wallet/signature"
 	"math/big"
 )
 
@@ -11,17 +12,12 @@ func main() {
 
 	moonkushPrivate := big.NewInt(1488)
 
-	aliceKeys := operations.GetKeyPair(moonkushPrivate)
+	aliceKeys := keys.GetKeys(moonkushPrivate)
 
-	signature, _ := operations.SignMessage(message, aliceKeys)
+	sign := signature.SignMessage(message, aliceKeys)
 
-	//bobPrivate := big.NewInt(122)
+	sign.GetSignature()
 
-	//bobKeys := operations.GetKeyPair(bobPrivate)
-
-	fmt.Println(signature)
-	fmt.Printf("R: %s\nS: %s\n", signature.R.String(), signature.S.String())
-
-	q := operations.VerifySignature(signature, "qwe", aliceKeys.PublicKey)
+	q := sign.VerifySignature("qwe", aliceKeys.GetPublic())
 	fmt.Println(q)
 }
