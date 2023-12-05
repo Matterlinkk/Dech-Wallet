@@ -1,4 +1,11 @@
-github.com/Matterlinkk/Dech-Node v1.0.0/go.mod h1:UBV8xRC9H2f+7scgcRF07IgaHyF+ieVh51EbK2GaoZo=
+github.com/Matterlinkk/Dech-Node v1.0.1 h1:nHJgKq7DJHDlPavb2l0vBEQLTNhUP5gUOB0Hh460bws=
+github.com/Matterlinkk/Dech-Node v1.0.1/go.mod h1:9+XgLkWcqQcsb0awvfekbFPmDlDZ4JYFM1tytocLdXQ=
+github.com/Matterlinkk/Dech-Wallet v1.0.0 h1:lf/W8vXC2ShbntJaBvO54JzoSa1fP2SkrUmk8oQ0/Bk=
+github.com/Matterlinkk/Dech-Wallet v1.0.0/go.mod h1:p5+8RWbndgTVn0bMnWs82tDK1CT0RXCDM/xb3p64IHo=
+github.com/Matterlinkk/Dech-Wallet v1.0.1 h1:GaYJ3noyaRB6iZqRU2dLTyA54cOCuna+ZpY9/RbzToU=
+github.com/Matterlinkk/Dech-Wallet v1.0.1/go.mod h1:7h6qf7zVXC2PL/7RFAU53SDDHmFOGQ5kUttncfyNMXg=
+github.com/go-chi/chi/v5 v5.0.10 h1:rLz5avzKpjqxrYwXNfmjkrYYXOyLJd37pz53UFHC6vk=
+github.com/go-chi/chi/v5 v5.0.10/go.mod h1:DslCQbL2OYiznFReuXYUmQ2hGd1aDpCnlMNITLSKoi8=
 github.com/tyler-smith/go-bip39 v1.1.0 h1:5eUemwrMargf3BSLRRCalXT93Ns6pQJIjYQN2nyfOP8=
 github.com/tyler-smith/go-bip39 v1.1.0/go.mod h1:gUYDtqQw1JS3ZJ8UWVcGTGqqr6YIN3CWg+kkNaLt55U=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=

@@ -79,7 +79,7 @@ func SignMessage(message string, keys keys.KeyPair) *Signature {
 
 }
 
-func (signature *Signature) VerifySignature(message string, publicKey *point.Point) bool {
+func VerifySignature(signature Signature, message string, publicKey *point.Point) bool {
 
 	n1 := "115792089237316195423570985008687907852837564279074904382605163141518161494337" //115792089237316195423570985008687907852837564279074904382605163141518161494337 value from GP
 	n, successN := new(big.Int).SetString(n1, 10)
