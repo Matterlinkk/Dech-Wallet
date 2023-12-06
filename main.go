@@ -1,23 +1,26 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/Matterlinkk/Dech-Wallet/keys"
-	"github.com/Matterlinkk/Dech-Wallet/signature"
 	"math/big"
 )
 
 func main() {
-	message := "qwe"
+	// Пример приватного ключа (ваша логика может использовать другие значения)
+	pK := big.NewInt(10)
 
-	moonkushPrivate := big.NewInt(1488)
+	// Получаем ключи на основе приватного ключа
+	keyPair := keys.GetKeys(pK)
 
-	aliceKeys := keys.GetKeys(moonkushPrivate)
+	// Маршалинг ключевой пары в JSON
+	jsonKeys, err := json.Marshal(keyPair)
+	if err != nil {
+		fmt.Println("Error marshalling JSON:", err)
+		return
+	}
 
-	sign := signature.SignMessage(message, aliceKeys)
-
-	sign.GetSignature()
-
-	q := signature.VerifySignature(*sign, "qwe", aliceKeys.GetPublic())
-	fmt.Println(q)
+	// Выводим JSON как строку
+	fmt.Println("JSON Representation:", string(jsonKeys))
 }
