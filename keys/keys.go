@@ -6,8 +6,8 @@ import (
 )
 
 type KeyPair struct {
-	privateKey *big.Int
-	publicKey  *point.Point
+	PrivateKey *big.Int     `json:"privateKey"`
+	PublicKey  *point.Point `json:"publicKey"`
 }
 
 func GetKeys(privateKey *big.Int) KeyPair {
@@ -17,17 +17,9 @@ func GetKeys(privateKey *big.Int) KeyPair {
 	publicKey := gPoint.Multiply(privateKey)
 
 	return KeyPair{
-		privateKey: privateKey,
-		publicKey:  publicKey,
+		PrivateKey: privateKey,
+		PublicKey:  publicKey,
 	}
-}
-
-func (keys *KeyPair) GetPublic() *point.Point {
-	return keys.publicKey
-}
-
-func (keys *KeyPair) GetPrivate() *big.Int {
-	return keys.privateKey
 }
 
 func GetSharedSecret(publicKey *point.Point, privateKey *big.Int) *big.Int {
