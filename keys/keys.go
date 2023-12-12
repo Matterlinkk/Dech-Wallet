@@ -2,12 +2,13 @@ package keys
 
 import (
 	"github.com/Matterlinkk/Dech-Wallet/point"
+	"github.com/Matterlinkk/Dech-Wallet/publickey"
 	"math/big"
 )
 
 type KeyPair struct {
-	PrivateKey *big.Int     `json:"privateKey"`
-	PublicKey  *point.Point `json:"publicKey"`
+	PrivateKey *big.Int             `json:"privateKey"`
+	PublicKey  *publickey.PublicKey `json:"publicKey"`
 }
 
 func GetKeys(privateKey *big.Int) KeyPair {
@@ -18,7 +19,9 @@ func GetKeys(privateKey *big.Int) KeyPair {
 
 	return KeyPair{
 		PrivateKey: privateKey,
-		PublicKey:  publicKey,
+		PublicKey: &publickey.PublicKey{
+			PublicKey: publicKey,
+		},
 	}
 }
 

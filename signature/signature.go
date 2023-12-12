@@ -10,33 +10,21 @@ import (
 )
 
 type Signature struct {
-	owner *point.Point
-	r     *big.Int
-	s     *big.Int
+	Owner *point.Point
+	R     *big.Int
+	S     *big.Int
 }
 
 func CreateSignature(part1, part2 *big.Int, publicKey *point.Point) *Signature {
 	return &Signature{
-		owner: publicKey,
-		r:     part1,
-		s:     part2,
+		Owner: publicKey,
+		R:     part1,
+		S:     part2,
 	}
 }
 
 func (signature *Signature) GetSignature() {
-	fmt.Printf("R: %s\nS: %s\n", signature.GetR().String(), signature.GetS().String())
-}
-
-func (signature *Signature) GetR() *big.Int {
-	return signature.r
-}
-
-func (signature *Signature) GetS() *big.Int {
-	return signature.s
-}
-
-func (signature *Signature) GetOwner() *point.Point {
-	return signature.owner
+	fmt.Printf("R: %s\nS: %s\n", signature.R, signature.S)
 }
 
 func SignMessage(message string, keys keys.KeyPair) *Signature {
@@ -64,7 +52,7 @@ func SignMessage(message string, keys keys.KeyPair) *Signature {
 
 	// k^-1 * ( intHASH(message) + d * r) mod n, if s = 0 then do recursion
 	invK := operations.FindInverse(k, n)
-	dr := new(big.Int).Mul(keys.GetPrivate(), r)
+	dr := new(big.Int).Mul(keys.PrivateKey, r)
 
 	hashdr := new(big.Int).Add(hashInt, dr)
 
@@ -75,7 +63,7 @@ func SignMessage(message string, keys keys.KeyPair) *Signature {
 		return SignMessage(message, keys)
 	}
 
-	return CreateSignature(r, s, keys.GetPublic())
+	return CreateSignature(r, s, keys.PublicKey)
 
 }
 
@@ -87,7 +75,7 @@ func VerifySignature(signature Signature, message string, publicKey *point.Point
 		panic("Error setting y value")
 	}
 
-	sInverse := operations.FindInverse(signature.GetS(), n)
+	sInverse := operations.FindInverse(signature.S, n)
 	sInverse.Mod(sInverse, n)
 
 	// Calculate the hashed message
@@ -98,7 +86,7 @@ func VerifySignature(signature Signature, message string, publicKey *point.Point
 	u := new(big.Int).Mul(messageInt, sInverse)
 	u.Mod(u, n)
 
-	v := new(big.Int).Mul(signature.GetR(), sInverse)
+	v := new(big.Int).Mul(signature.R, sInverse)
 	v.Mod(v, n)
 
 	// Calculate the curve point P = u * G + v * publicKey
@@ -114,5 +102,5 @@ func VerifySignature(signature Signature, message string, publicKey *point.Point
 	p := cPoint.Add(vPublicKey)
 
 	// Check if R is equal to x-coordinate of the point P
-	return p.GetX().Cmp(signature.GetR()) == 0
+	return p.GetX().Cmp(signature.R) == 0
 }

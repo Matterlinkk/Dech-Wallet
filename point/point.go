@@ -8,8 +8,8 @@ import (
 )
 
 type Point struct {
-	x *big.Int
-	y *big.Int
+	X *big.Int
+	Y *big.Int
 }
 
 func createPoint(x, y *big.Int) (*Point, error) {
@@ -28,8 +28,8 @@ func createPoint(x, y *big.Int) (*Point, error) {
 	}
 
 	return &Point{
-		x: x,
-		y: y,
+		X: x,
+		Y: y,
 	}, nil
 }
 
@@ -38,11 +38,11 @@ func (p *Point) GetPoint() *Point {
 }
 
 func (p *Point) GetX() *big.Int {
-	return p.x
+	return p.X
 }
 
 func (p *Point) GetY() *big.Int {
-	return p.y
+	return p.Y
 }
 
 func (p *Point) isEqualTo(point Point) bool {
@@ -63,8 +63,8 @@ func CreateGPoint() *Point {
 	}
 
 	return &Point{
-		x: x,
-		y: y,
+		X: x,
+		Y: y,
 	}
 }
 
@@ -89,7 +89,7 @@ func (p *Point) DoublePoint() *Point {
 	yPrime.Sub(yPrime, p.GetY())
 	yPrime.Mod(yPrime, cfg.GetP())
 
-	return &Point{x: xPrime, y: yPrime}
+	return &Point{X: xPrime, Y: yPrime}
 }
 
 func (p *Point) Add(point *Point) *Point {
@@ -115,7 +115,7 @@ func (p *Point) Add(point *Point) *Point {
 	y.Sub(y, p.GetY())
 	y.Mod(y, cfg.GetP())
 
-	return &Point{x: x, y: y}
+	return &Point{X: x, Y: y}
 }
 
 func (p *Point) Multiply(times *big.Int) *Point {
