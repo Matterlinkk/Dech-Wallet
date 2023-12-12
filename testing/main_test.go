@@ -15,7 +15,7 @@ func TestSignature(t *testing.T) {
 
 	sign := signature.SignMessage(m, alice)
 
-	verify := sign.VerifySignature(m, alice.GetPublic())
+	verify := signature.VerifySignature(*sign, m, alice.PublicKey)
 
 	if !verify {
 		t.Error("Invalid signature")
