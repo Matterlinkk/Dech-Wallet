@@ -11,9 +11,10 @@ import (
 )
 
 type Signature struct {
-	Owner *publickey.PublicKey
-	R     *big.Int
-	S     *big.Int
+	Owner          *publickey.PublicKey
+	OwnerPublicKey *point.Point
+	R              *big.Int
+	S              *big.Int
 }
 
 func CreateSignature(part1, part2 *big.Int, publicKey publickey.PublicKey) *Signature {
