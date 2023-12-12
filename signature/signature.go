@@ -6,18 +6,19 @@ import (
 	"github.com/Matterlinkk/Dech-Wallet/keys"
 	"github.com/Matterlinkk/Dech-Wallet/operations"
 	"github.com/Matterlinkk/Dech-Wallet/point"
+	"github.com/Matterlinkk/Dech-Wallet/publickey"
 	"math/big"
 )
 
 type Signature struct {
-	Owner *point.Point
+	Owner *publickey.PublicKey
 	R     *big.Int
 	S     *big.Int
 }
 
-func CreateSignature(part1, part2 *big.Int, publicKey *point.Point) *Signature {
+func CreateSignature(part1, part2 *big.Int, publicKey publickey.PublicKey) *Signature {
 	return &Signature{
-		Owner: publicKey,
+		Owner: &publicKey,
 		R:     part1,
 		S:     part2,
 	}
@@ -63,7 +64,7 @@ func SignMessage(message string, keys keys.KeyPair) *Signature {
 		return SignMessage(message, keys)
 	}
 
-	return CreateSignature(r, s, keys.PublicKey)
+	return CreateSignature(r, s, *keys.PublicKey)
 
 }
 
