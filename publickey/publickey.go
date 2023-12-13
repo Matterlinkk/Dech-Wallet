@@ -1,6 +1,7 @@
 package publickey
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"github.com/Matterlinkk/Dech-Wallet/hash"
 	"github.com/Matterlinkk/Dech-Wallet/point"
@@ -19,5 +20,7 @@ func (pK PublicKey) GetAdress() string {
 	versionedRipemd160 := append([]byte{0x00}, []byte(ripemd160)...)
 	address := base58.Encode(versionedRipemd160)
 
-	return address
+	hexString := hex.EncodeToString([]byte(address))
+
+	return hexString
 }
