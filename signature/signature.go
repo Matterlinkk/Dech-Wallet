@@ -19,9 +19,10 @@ type Signature struct {
 
 func CreateSignature(part1, part2 *big.Int, publicKey publickey.PublicKey) *Signature {
 	return &Signature{
-		Owner: &publicKey,
-		R:     part1,
-		S:     part2,
+		Owner:          &publicKey,
+		OwnerPublicKey: publicKey.PublicKey,
+		R:              part1,
+		S:              part2,
 	}
 }
 
