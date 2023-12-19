@@ -25,9 +25,9 @@ func GetKeys(privateKey *big.Int) KeyPair {
 	}
 }
 
-func GetSharedSecret(publicKey *point.Point, privateKey *big.Int) *big.Int {
+func GetSharedSecret(publicKey publickey.PublicKey, privateKey *big.Int) *big.Int {
 
-	sharedSecret := publicKey.Multiply(privateKey)
+	sharedSecret := publicKey.PublicKey.Multiply(privateKey)
 
 	return new(big.Int).Set(sharedSecret.GetX())
 }
