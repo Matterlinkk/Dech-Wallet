@@ -20,9 +20,9 @@ func main() {
 
 	fmt.Printf("Alice`s secret: %s\nBob`s secret: %s\nSecrets are %t\n\n", secretA.String(), secretB.String(), secretA.String() == secretB.String())
 
-	encryptedMessage := operations.GetEncryptedMessage(secretA, message)
+	encryptedMessage := operations.GetEncryptedString(secretA.Bytes(), message)
 
-	decryptedMessage := operations.GetDecryptedMessage(secretA, encryptedMessage)
+	decryptedMessage := operations.GetDecryptedString(secretA.Bytes(), encryptedMessage)
 
 	fmt.Printf("Original message: %s\nEncrypted message: %s\nDecrypted message: %s\n", message, encryptedMessage, decryptedMessage)
 

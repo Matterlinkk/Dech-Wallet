@@ -53,7 +53,7 @@ func GenerateRandomNumber() (*big.Int, error) {
 }
 
 func encrypt(plaintext []byte, block cipher.Block) []byte {
-	// Добавляем отступ до размера блока
+
 	plaintext = append(plaintext, bytes.Repeat([]byte{byte(16 - len(plaintext)%16)}, 16-len(plaintext)%16)...)
 	ciphertext := make([]byte, len(plaintext))
 	iv := make([]byte, aes.BlockSize)
@@ -70,14 +70,14 @@ func encrypt(plaintext []byte, block cipher.Block) []byte {
 	return ciphertext
 }
 
-func GetEncryptedMessage(secret *big.Int, message string) string {
+func GetEncryptedString(secret []byte, message string) string {
 
 	// Convert a shared secret into a byte array of the required length for an AES key
-	sharedSecretBytes := secret.Bytes()
+	sharedSecretBytes := secret
 
 	// AES random key generation
 	key := make([]byte, 32)
-	copy(key, sharedSecretBytes) // Используем общий секрет в качестве ключа
+	copy(key, sharedSecretBytes)
 
 	// Initialization of AES block cipher
 	block, err := aes.NewCipher(key)
@@ -109,9 +109,9 @@ func decrypt(ciphertext []byte, block cipher.Block) []byte {
 	return ciphertext[:len(ciphertext)-padSize]
 }
 
-func GetDecryptedMessage(secret *big.Int, ciphertext string) string {
+func GetDecryptedString(secret []byte, ciphertext string) string {
 	// Convert a shared secret into a byte array of the required length for an AES key
-	sharedSecretBytes := secret.Bytes()
+	sharedSecretBytes := secret
 
 	// AES random key generation
 	key := make([]byte, 32)
