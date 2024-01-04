@@ -5,29 +5,12 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"github.com/tyler-smith/go-bip39"
 	"io"
-	"log"
 	"math/big"
 )
 
-func CreateMnemonic() string {
-	// Random entropy generation
-	entropy, err := bip39.NewEntropy(128)
-	if err != nil {
-		log.Panicf("Error %s", err)
-	}
-	// Converting entropy into a mnemonic phrase
-	mnemonic, err := bip39.NewMnemonic(entropy)
-	if err != nil {
-		log.Panicf("Error %s", err)
-	}
-	return mnemonic
-}
-
 func FindInverse(number, modulus *big.Int) *big.Int {
 	// Calculate the modular inverse using exponentiation
-	// The modular inverse of 'number' modulo 'modulus' is equivalent to 'number' raised to the power of 'modulus-2' modulo 'modulus'
 	// This is based on Fermat's Little Theorem for prime 'modulus'
 	exponent := new(big.Int).Sub(modulus, big.NewInt(2))
 	inverse := new(big.Int).Exp(number, exponent, modulus)
@@ -85,7 +68,6 @@ func GetEncryptedString(secret []byte, message string) string {
 		panic(err.Error())
 	}
 
-	// Message encryption
 	plaintext := []byte(message)
 
 	return string(encrypt(plaintext, block))
